@@ -1,0 +1,88 @@
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define WIDTH 80
+#define HEIGHT 24
+#define PI 3.14159265
+
+void clear_screen() {
+    printf("\033[2J");
+    printf("\033[1;1H");
+}
+
+void draw_donut(float theta, float phi) {
+    float A = 1.5;
+    float B = 1.0;
+    float cos_phi = cos(phi);
+    float sin_phi = sin(phi);
+    float cos_theta = cos(theta);
+    float sin_theta = sin(theta);
+    float twopi = 2 * PI;
+    int x, y;
+    float zbuffer[WIDTH][HEIGHT];
+    char output[WIDTH][HEIGHT];
+
+    // Initialize z-buffer and output array
+    for (y = 0; y < HEIGHT; y++) {
+        for (x = 0; x < WIDTH; x++) {
+            zbuffer[x][y] = 0;
+            output[x][y] = ' ';
+        }
+    }
+
+    // Generate points on the surface of the donut
+    for (float t = 0; t < twopi; t += 0.02) {
+        float cost = cos(t);
+        float sint = sin(t);
+
+        for (float p = 0; p < twopi; p += 0.05) {
+            float cosp = cos(p);
+            float sinp = sin(p);
+            float circlex = cost;
+            float circley = sint;
+            float circlez = 0.5;
+
+            // Apply rotations to create the 3D donut shape
+            float x = circlex * (B * cos_theta + A * sinp * sin_theta) - circlez * sinp * cos_theta;
+            float y = circley * (B * cos_theta + A * sinp * sin_theta) + circlez * sinp * sin_theta;
+            float z = circlex * sin_theta - circlez * cos_theta - 1.5;
+
+            float nd = 1.0 / (z + 4);
+            int i = (int)((WIDTH / 2) + x * nd * (WIDTH / 8));
+            int j = (int)((HEIGHT / 2) - y * nd * (HEIGHT / 4));
+
+            // Check if point is within the screen boundaries
+            if (i >= 0 && i < WIDTH && j >= 0 && j < HEIGHT) {
+                if (nd > zbuffer[i][j]) {
+                    zbuffer[i][j] = nd;
+                    output[i][j] = '.';
+                }
+            }
+        }
+    }
+
+    // Print the output array to display the donut
+    for (y = 0; y < HEIGHT; y++) {
+        for (x = 0; x < WIDTH; x++) {
+            printf("%c", output[x][y]);
+        }
+        printf("\n");
+    }
+}
+
+int main() {
+    float theta = 0.0;
+    float phi = 0.0;
+
+    while (1) {
+        clear_screen();
+        draw_donut(theta, phi);
+        usleep(50000);  // Delay for smoother animation
+        theta += 0.04;
+        phi += 0.02;
+    }
+
+    return 0;
+}
